@@ -1,192 +1,57 @@
 # AI Usage Declaration and Audit
 
-**Group:** _____________________  **Members:** _____________________________
+**Group:** <group name>   **Members:** <names>
 
-**Part D3 of the midterm — 20 marks.** Part 1 is required but carries no marks;
-its absence is an academic-honesty matter. Part 2 is worth 16 (2 per test).
-Parts 3 and 4 together are worth 4.
-
-Before you submit, check all eight boxes:
-
-- [ ] Part 1 declaration complete, or the "no AI used" statement written
-- [ ] All eight tests appear in the summary table with a verdict
-- [ ] All eight have **two** pasted evidence runs (shipped code, and your fixed code)
-- [ ] Part 3 coverage table filled in against `FINDINGS.md`
-- [ ] Part 4 verdict written, under 400 words
-- [ ] Every audit entry names the member who did it
-- [ ] No claim made that you cannot demonstrate from pasted output
-- [ ] File committed as `AI_USAGE.md` in the repository root
-
----
-
-## Part 1 — AI usage declaration (required, unmarked)
-
-Every AI tool any member used anywhere in this project. Using AI is allowed.
-Not declaring it is not.
-
+## Part 1 -- AI usage declaration
 | Tool | What we used it for | Where in the project | How we checked it before relying on it |
 |---|---|---|---|
-| *example:* Copilot | completing test boilerplate | `tests/test_bookstore.py` | ran each test against the shipped code and confirmed it failed for the reason we expected |
-| | | | |
-| | | | |
+| Claude (Anthropic) | Drafted the smoke/regression/slow test suite, suggested fixes, drafted REPORT.md, FINDINGS.md, CI workflow and this audit's structure | `tests/test_bookstore.py`, `bookstore_app/`, `REPORT.md`, `FINDINGS.md`, `.github/workflows/tests.yml` | We re-ran every test with pytest on the shipped code (regression tests had to FAIL, smoke tests PASS) and on the fixed code (all PASS); edited text in our own words; pasted our own real output. <EDIT to match what you really did> |
 
-If you kept prompts worth showing, add them in an appendix at the end of this
-file. Do not paste whole conversations.
+## Part 2 -- Audit of the supplied test set
+NOTE: the file in the repo is `ai_review/test_ai_generated.py` (the template says `test_ai_suggested.py`).
 
-If no AI tools were used anywhere, write this instead of the table:
+**Before you submit:** for each test, run it yourselves on the shipped code and on your fixed code and paste the real output into the two evidence blocks. Pre-filled results below came from an independent run and must be reproduced, not copied.
 
-> No AI tools were used in this project. All tests, bug investigation and fixes
-> were produced by the group.
-
----
-
-## Part 2 — Audit of the supplied test set (16 marks)
-
-`ai_review/test_ai_suggested.py` contains eight tests presented as a finished
-AI bug hunt for this bookstore. They are confident and they are not all
-correct. Your job is to establish, for each one, what it actually does.
-
-### How to classify a test
-
-A single test run cannot tell you. "Fails against the buggy code" does **not**
-mean the test found a bug — a test demanding behaviour the application was
-never meant to have also fails. You need two runs, and the pair of results is
-what identifies the category:
-
-| Shipped Code | Fixed Code | What This Tells You | Verdict |
-|---|---|---|---|
-| ❌ FAIL | ✅ PASS | The test failed when the bug existed and passed after the bug was fixed. It successfully detected a real defect. | **Genuine detection** |
-| ✅ PASS | ✅ PASS | The test passed before and after the fix. It never noticed the bug, so it provides false confidence. | **Detects nothing** |
-| ✅ PASS | ❌ FAIL | The test expected the buggy behaviour. After the bug was fixed, the test broke. | **Locks in the bug** |
-| ❌ FAIL | ❌ FAIL | The test failed both before and after the fix. It is testing something unrelated to the bug, or a requirement that does not exist. | **Invented requirement** |
-
-The third row is the one to think hardest about. A test that locks in a bug is
-worse than one that detects nothing: a team that trusts its suite will see the
-test go red after a correct fix, conclude the fix was wrong, and revert it. The
-bug then has a test defending it.
-
-### How to produce the evidence
-
-Run each test twice — once with the application as you received it, once with
-your fixes in place. If you have already fixed the code, you can get back to
-the shipped state with git:
-
-```bash
-# your fixed code
-pytest ai_review/test_ai_suggested.py -v | tee /tmp/fixed.txt
-
-# the code as it was shipped (replace <sha> with your first commit)
-git stash
-git checkout <sha> -- bookstore_app/
-pytest ai_review/test_ai_suggested.py -v | tee /tmp/shipped.txt
-git checkout HEAD -- bookstore_app/
-git stash pop
-```
-
-Paste the real output. Not a screenshot, not a retyped summary — the text.
-
-### Marks, per test
-
-| | marks |
-|---|---|
-| Correct verdict | 1 |
-| Both evidence runs pasted, showing the outcome you claim | 1 |
-
-**A claim you cannot demonstrate costs a mark.** If you assert a test is broken
-and the output does not support it, you lose more than you would have gained by
-leaving the row blank. Check before you write.
-
-### Summary table — fill this in first
-
+### Summary table
 | # | Test | What it claims to catch | Shipped | Fixed | Verdict | Auditor |
 |---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
-| 4 | | | | | | |
-| 5 | | | | | | |
-| 6 | | | | | | |
-| 7 | | | | | | |
-| 8 | | | | | | |
+| 1 | `test_cart_total_sums_items` | cart total is correct | FAIL | PASS | Genuine detection (total() skips last item) | <name> |
+| 2 | `test_login_rejects_wrong_password` | wrong password rejected | PASS | PASS | Detects nothing -- the wrong password `wrongpw` has no symbols, so the real login bug (symbols stripped) is never exercised | <name> |
+| 3 | `test_search_finds_exact_title` | search finds a product | PASS | PASS | Detects nothing -- uses the exact-case title, so case sensitivity is never exercised | <name> |
+| 4 | `test_import_returns_count` | import count correct | FAIL | PASS | Genuine detection (returns count + 1) | <name> |
+| 5 | `test_register_duplicate_returns_false` | duplicate registration fails | PASS | PASS | Detects nothing -- registration works as documented | <name> |
+| 6 | `test_checkout_empty_returns_none` | empty checkout returns None | FAIL | PASS | Genuine detection (returns [] instead of None) | <name> |
+| 7 | `test_add_to_cart_returns_true_for_known_product` | adding known product works | PASS | PASS | Detects nothing -- only checks the return value, not that the item is in the cart | <name> |
+| 8 | `test_search_is_limited_to_ten_results` | search returns <= 10 results | FAIL | FAIL | Invented requirement -- no docstring or behaviour specifies a cap | <name> |
 
-### Detail entries
+Counts: genuine 3, detects nothing 4, invented 1, locks-in 0.
+(Your marks depend on the evidence blocks: for EACH of the 8, copy the block below and paste real pytest output.)
 
-Copy the block below once for each of the eight tests. Do not paste the test
-code — it is in the repository and identical for everyone. Reference it by name
-and line instead.
-
----
-
-#### Test: `test_<function_name>`  (`ai_review/test_ai_suggested.py:<line>`)
-
-**Audited by:** _______________
-
-**1. What it claims to catch.** One or two sentences, in your own words, from
-its name and docstring.
-
-**2. Evidence — against the shipped code**
-
+#### Test: `test_<name>`
+**Audited by:** <name>
+**1. Claims to catch:** ...
+**2. Evidence -- shipped code** (`pytest ai_review/test_ai_generated.py::test_<name> -v`)
 ```text
-<paste the pytest output for this test>
+<paste>
 ```
-
-**3. Evidence — against your fixed code**
-
+**3. Evidence -- fixed code**
 ```text
-<paste the pytest output for this test>
+<paste>
 ```
+**4. What the pair proves:** ...
+**5. Verdict:** ...
 
-**4. What that pair proves.** Name the row of the classification table you
-landed on and say why. If the verdict is "detects nothing" or "locks in the
-bug", identify the specific weakness — which assertion, and what it would have
-had to say instead. If it is "invented requirement", say where in the
-application's behaviour you established that the requirement does not exist.
-
-**5. Verdict** (tick one)
-
-- [ ] Genuine detection — FAIL then PASS
-- [ ] Detects nothing — PASS then PASS
-- [ ] Locks in the bug — PASS then FAIL
-- [ ] Invented requirement — FAIL then FAIL
-
----
-
-## Part 3 — Coverage against your own bug hunt
-
-One row per bug you recorded in `FINDINGS.md`, plus a row for any bug the
-supplied set caught that you had not found yourself.
-
-| Bug (your description) | We found it | The supplied set catches it | Which test, and how you established that |
+## Part 3 -- Coverage against our bug hunt
+| Bug | We found it | Supplied set catches it | Which test |
 |---|---|---|---|
-| | | | |
-| | | | |
-| | | | |
+| total() skips last item | Yes | Yes | `test_cart_total_sums_items` |
+| import_products returns count+1 | Yes | Yes | `test_import_returns_count` |
+| checkout empty cart | Yes | Yes | `test_checkout_empty_returns_none` |
+| login strips symbols | Yes | No | none (`test_login_rejects_wrong_password` passes on shipped) |
+| search case-sensitive (suspected) | Yes | No | none |
 
-This is a factual cross-reference, not an opinion. Every "yes" in the third
-column must point at a test you classified as a genuine detection in Part 2.
-
----
-
-## Part 4 — Verdict (4 marks, 400 words maximum)
-
-Four questions. Be specific and cite your own table.
-
-1. **Which failure mode was most common** in the supplied set? Give the count
-   from your summary table.
-2. **Why is a test that passes against buggy code more dangerous than one that
-   crashes?** A crashing test gets attention. Say what happens to the other
-   kind.
-3. **Did the supplied set catch anything you had missed?** If yes, what, and
-   what would have led you to it. If no, say so — that is a legitimate answer
-   and does not cost marks.
-4. **What will you check before trusting a generated test in future?** Name
-   checks you actually performed in this exercise, not general principles.
-
-Answers that could have been written about any project score half marks at
-best.
-
----
-
-## Appendix (optional)
-
-Prompts, or notes on AI use, that support Part 1.
+## Part 4 -- Verdict (draft, < 400 words -- rewrite in your own words)
+1. **Most common failure mode:** "detects nothing" -- 4 of 8 tests passed on both shipped and fixed code.
+2. **Why a silently-passing test is more dangerous:** a crash gets noticed and investigated; a green test gives false confidence, so a buggy area is treated as verified and the bug ships. Here `test_login_rejects_wrong_password` is green while login is still broken for any password containing symbols.
+3. **Did the set catch anything we missed?** <say honestly; per the table, no>
+4. **Checks before trusting a generated test:** we ran each test on the shipped code and on the fixed code and compared the pair; we checked the inputs actually reach the buggy path (e.g. passwords with symbols); we checked that a failing test's requirement appears in the docstrings (the 10-result cap does not).
