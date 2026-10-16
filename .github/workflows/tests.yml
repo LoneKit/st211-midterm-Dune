@@ -1,16 +1,14 @@
-# Starter CI workflow for Part E. Complete it so that:
-#   - every push runs the smoke tests
-#   - a scheduled nightly run executes the FULL suite (including slow tests)
-# It must actually run on GitHub Actions (checked via your Actions tab).
-
 name: tests
 
 on:
   push:
-  # TODO: add a scheduled nightly trigger (hint: 'schedule:' with a cron entry)
+  schedule:
+    - cron: "0 2 * * *"      # nightly at 02:00 UTC
+  workflow_dispatch:          # lets you run it manually from the Actions tab
 
 jobs:
   smoke:
+    # runs on every push (cheap and fast)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,5 +16,16 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: pytest -m smoke
-      # TODO: add a job (or step) that runs the full suite on the nightly schedule
+      - run: python -m pytest -m smoke -v
+
+  full-suite:
+    # nightly or manual only: everything, including slow tests
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest tests/ -v
